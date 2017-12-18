@@ -54,6 +54,7 @@ module Axlsx
         i18n = options.delete(:i18n) || xlsx_i18n
         columns = options.delete(:columns) || xlsx_columns
         labels = options.delete(:labels) || {}
+        as_array = options.delete(:as_array)
 
         p = options.delete(:package) || Package.new
         row_style = p.workbook.styles.add_style(row_style) unless row_style.nil?
@@ -61,8 +62,9 @@ module Axlsx
         i18n = xlsx_i18n == true ? 'activerecord.attributes' : i18n
         sheet_name = options.delete(:name) || (i18n ? I18n.t("#{i18n}.#{table_name.underscore}") : table_name.humanize)
         data = options.delete(:data) || where(options)
+        data = data.to_a if as_array
 
-        return p if data.to_a.empty?
+        return p if (data.try(:unscope, :group) || data).empty?
 
         p.workbook.add_worksheet(name: sheet_name) do |sheet|
           col_labels = columns.map do |c|
@@ -78,7 +80,8 @@ module Axlsx
 
           sheet.add_row col_labels, style: header_style
 
-          data.each do |r|
+          iterator = data.respond_to?(:find_each) ? [:find_each, { batch_size: 500 }] : [:each]
+          data.send(*iterator) do |r|
             row_data = columns.map do |c|
               if r.attributes.key? c
                 r[c]
