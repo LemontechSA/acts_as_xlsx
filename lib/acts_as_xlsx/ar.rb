@@ -66,6 +66,13 @@ module Axlsx
 
         return p if (data.try(:unscope, :group) || data).empty?
 
+        bool_columns = []
+        types.each_with_index.select { |t, i| t == :boolean }.map(&:last).each do |idx|
+          types[idx] = :string
+          bool_columns << columns[idx]
+        end
+        false_values = [0, false, nil, '0', 'false', '']
+
         p.workbook.add_worksheet(name: sheet_name) do |sheet|
           col_labels = columns.map do |c|
             default = c.to_s.tr('.', '_').humanize
@@ -83,13 +90,20 @@ module Axlsx
           iterator = data.respond_to?(:find_each) ? [:find_each, { batch_size: 500 }] : [:each]
           data.send(*iterator) do |r|
             row_data = columns.map do |c|
-              if r.attributes.key? c
-                r[c]
-              elsif c.to_s =~ /\./
-                v = r; c.to_s.split('.').each { |method| v = v.nil? ? nil : v.send(method) }; v
-              else
-                r.send(c)
+              value = if r.attributes.key? c
+                        r[c]
+                      elsif c.to_s =~ /\./
+                        v = r
+                        c.to_s.split('.').each { |method| v = v.nil? ? nil : v.send(method) }
+                        v
+                      else
+                        r.send(c)
+                      end
+              if c.in?(bool_columns)
+                value = value.in?(false_values) ? 'no' : 'yes'
+                value = I18n.t("#{i18n}.generic.#{value}", default: value.titleize)
               end
+              value
             end
             sheet.add_row row_data, style: row_style, types: types
           end
