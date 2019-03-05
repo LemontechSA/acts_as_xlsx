@@ -90,18 +90,14 @@ module Axlsx
           iterator = data.respond_to?(:find_each) ? [:find_each, { batch_size: 500 }] : [:each]
           data.send(*iterator) do |r|
             row_data = columns.map do |c|
-              if c.is_a? Proc
-                value = r.call(c)
-              else
-                value = r
-                c.to_s.split(/(?<!\\)\./).each do |method|
-                  method = method.gsub('\.', '.')
-                  value = value.try(method) || value.try(:[], method)
-                end
-                if c.in?(bool_columns)
-                  value = value.in?(false_values) ? 'no' : 'yes'
-                  value = I18n.t("#{i18n}.generic.#{value}", default: value.titleize)
-                end
+              value = r
+              c.to_s.split(/(?<!\\)\./).each do |method|
+                method = method.gsub('\.', '.')
+                value = value.try(method) || value.try(:[], method)
+              end
+              if c.in?(bool_columns)
+                value = value.in?(false_values) ? 'no' : 'yes'
+                value = I18n.t("#{i18n}.generic.#{value}", default: value.titleize)
               end
               value
             end
