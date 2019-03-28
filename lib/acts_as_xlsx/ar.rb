@@ -73,6 +73,17 @@ module Axlsx
         end
         false_values = [0, false, nil, '0', 'false', '']
 
+        if !row_style
+          time_xf = p.workbook.styles.add_style(format_code: 'dd-mm-yyyy hh:mm:ss')
+          nowrap_xf = p.workbook.styles.add_style(alignment: { wrap_text: true })
+          row_style = types.map do |type|
+            case type
+            when :time then time_xf
+            when :string, nil then nowrap_xf
+            end
+          end
+        end
+
         p.workbook.add_worksheet(name: sheet_name) do |sheet|
           col_labels = columns.map do |c|
             default = c.to_s.tr('.', '_').humanize
@@ -99,6 +110,7 @@ module Axlsx
                 value = value.in?(false_values) ? 'no' : 'yes'
                 value = I18n.t("#{i18n}.generic.#{value}", default: value.titleize)
               end
+              value = value.to_date if types[idx] == :date && value && !value.is_a?(Date)
               value
             end
             sheet.add_row row_data, style: row_style, types: types
