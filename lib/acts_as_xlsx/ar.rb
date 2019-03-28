@@ -76,10 +76,12 @@ module Axlsx
         if !row_style
           time_xf = p.workbook.styles.add_style(format_code: 'dd-mm-yyyy hh:mm:ss')
           nowrap_xf = p.workbook.styles.add_style(alignment: { wrap_text: true })
+          date_xf = p.workbook.styles.add_style(format_code: 'dd-mm-yyyy')
           row_style = types.map do |type|
             case type
             when :time then time_xf
             when :string, nil then nowrap_xf
+            when :date then date_xf
             end
           end
         end
