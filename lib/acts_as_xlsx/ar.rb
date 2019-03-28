@@ -100,7 +100,7 @@ module Axlsx
 
           iterator = data.respond_to?(:find_each) ? [:find_each, { batch_size: 500 }] : [:each]
           data.send(*iterator) do |r|
-            row_data = columns.map do |c|
+            row_data = columns.each_with_index.map do |c, idx|
               value = r
               c.to_s.split(/(?<!\\)\./).each do |method|
                 method = method.gsub('\.', '.')
