@@ -101,6 +101,7 @@ module Axlsx
           sheet.add_row col_labels, style: header_style
 
           iterator = data.respond_to?(:find_each) ? [:find_each, { batch_size: 500 }] : [:each]
+          debugger
           data.send(*iterator) do |r|
             row_data = columns.each_with_index.map do |c, idx|
               value = r
