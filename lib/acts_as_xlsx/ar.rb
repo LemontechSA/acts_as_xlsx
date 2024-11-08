@@ -36,6 +36,9 @@ module Axlsx
 
     # Singleton methods for the mixin
     module SingletonMethods
+      # Regex to escape special characters in excel formulas
+      REGEX = /\A(=|\+|-|@|\x09|\x0D)/.freeze
+
       # Maps the AR class to an Axlsx package
       # options are passed into AR find
       # @param [Array, Array] columns as an array of symbols or a symbol that defines the attributes or methods to render in the sheet.
@@ -108,6 +111,10 @@ module Axlsx
                 method = method.gsub('\.', '.')
                 value = value.try(method) || value.try(:[], method)
               end
+
+              # Escape special characters to prevent csv injection
+              value = escape_value(value)
+
               if c.in?(bool_columns)
                 value = value.in?(false_values) ? 'no' : 'yes'
                 value = I18n.t("#{i18n}.generic.#{value}", default: value.titleize)
@@ -119,6 +126,12 @@ module Axlsx
           end
         end
         p
+      end
+
+      def escape_value(value)
+        return value unless value.instance_of?(String)
+
+        value =~ REGEX ? "'#{value}" : value
       end
     end
   end
